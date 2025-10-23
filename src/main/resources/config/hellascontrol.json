@@ -1,0 +1,5 @@
+{
+  "version": "2.0.0",
+  "dependencies": ["Required:","- Forge 36.2.42+", "Optional:", "- Pixelmon", "- HellasForms", "- HellasPatcher", "- HellasDeck", "- HellasElo"],
+  "features": ["- Theft Protection", "License Verification", "Version Checkup"]
+}

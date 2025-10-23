@@ -1,0 +1,54 @@
+package com.xsasakihaise.hellascontrol.license;
+
+import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public final class LicenseCache {
+    private static final Gson GSON = new Gson();
+
+    private boolean valid;
+    private String licenseId;
+    private String message;
+    private String expires;
+    private String serverUrl; // optional
+    private List<String> entitlements = new ArrayList<>(); // <-- NEW
+
+    public boolean isValid() { return valid; }
+    public String getLicenseId() { return licenseId; }
+    public String getMessage() { return message; }
+    public String getExpires() { return expires; }
+    public String getServerUrl() { return serverUrl; }
+    public List<String> getEntitlements() {
+        return entitlements == null ? Collections.emptyList() : Collections.unmodifiableList(entitlements);
+    }
+
+    public static LicenseCache fromJson(String json) {
+        try {
+            LicenseCache c = GSON.fromJson(json, LicenseCache.class);
+            if (c.entitlements == null) c.entitlements = new ArrayList<>();
+            return c;
+        } catch (Exception e) {
+            return invalid("Corrupt license.json");
+        }
+    }
+
+    public static LicenseCache fromResponse(LicenseResponse r) {
+        LicenseCache c = new LicenseCache();
+        c.valid = "valid".equalsIgnoreCase(r.getStatus());
+        c.licenseId = r.getLicenseId();
+        c.message = r.getMessage();
+        c.expires = r.getExpires();
+        c.entitlements = new ArrayList<>(r.getEntitlements() == null ? Collections.emptyList() : r.getEntitlements());
+        return c;
+    }
+
+    public static LicenseCache invalid(String msg) {
+        LicenseCache c = new LicenseCache();
+        c.valid = false;
+        c.message = msg;
+        c.entitlements = new ArrayList<>();
+        return c;
+    }
+}
