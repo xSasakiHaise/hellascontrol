@@ -106,16 +106,12 @@ later handshake and sidemod checks.
   verbatim on the “Disconnected” screen. Make sure the website returns user-
   friendly copy for non-valid statuses.
 
-## Sidemod and Admin Hooks
+## Sidemod Hooks
 
 - Server-side integrations should call `HellasControl.requireEntitlement` or the
   convenience wrapper `CoreCheck.verifyEntitled` during startup to make sure the
   necessary entitlements are present. Missing entitlements throw an exception,
   preventing the sidemod from enabling incomplete features.【F:src/main/java/com/xsasakihaise/hellascontrol/HellasControl.java†L87-L109】【F:src/main/java/com/xsasakihaise/hellascontrol/api/CoreCheck.java†L13-L28】
-- Admin commands `/hellas control version`, `/hellas control dependencies`, and
-  `/hellas control features` read from `HellasControlInfoConfig`, which is
-  populated at startup. Keep the bundled defaults up to date when adding new
-  features so server operators can verify the integration from in game.【F:src/main/java/com/xsasakihaise/hellascontrol/HellasControl.java†L28-L53】【F:src/main/java/com/xsasakihaise/hellascontrol/commands/HellasControlVersionCommand.java†L1-L60】【F:src/main/java/com/xsasakihaise/hellascontrol/commands/HellasControlDependenciesCommand.java†L1-L36】【F:src/main/java/com/xsasakihaise/hellascontrol/commands/HellasControlFeaturesCommand.java†L1-L38】
 
 ## Operational Checklist for Website Changes
 

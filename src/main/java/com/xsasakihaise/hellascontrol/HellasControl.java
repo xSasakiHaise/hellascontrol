@@ -1,15 +1,11 @@
 package com.xsasakihaise.hellascontrol;
 
-import com.xsasakihaise.hellascontrol.commands.HellasControlDependenciesCommand;
-import com.xsasakihaise.hellascontrol.commands.HellasControlFeaturesCommand;
-import com.xsasakihaise.hellascontrol.commands.HellasControlVersionCommand;
 import com.xsasakihaise.hellascontrol.enforcement.LicenseEnforcer;
 import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
 import com.xsasakihaise.hellascontrol.network.NetworkHandler;
 
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -24,7 +20,6 @@ import java.util.Locale;
  *  - initializes server-side license cache
  *  - performs server license enforcement
  *  - exposes ping/pong handshake for clients
- *  - registers debug/admin commands
  *
  * Clients do NOT hold a license; they only verify that the connected server
  * runs HellasControl and is licensed (via network handshake).
@@ -45,7 +40,7 @@ public class HellasControl {
         // Register MOD-bus listeners (lifecycle)
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
 
-        // Register FORGE-bus listeners (server start, commands)
+        // Register FORGE-bus listeners (server start)
         MinecraftForge.EVENT_BUS.register(this);
 
         // Network channel for client<->server handshake (ping/pong)
@@ -80,16 +75,6 @@ public class HellasControl {
         // Load/refresh human-readable info config from server root, if you keep it there
         // (optional; no-op if your HellasControlInfoConfig handles only in-jar defaults)
         // infoConfig.load(serverRoot.toFile());
-    }
-
-    /**
-     * Register admin/debug commands.
-     */
-    @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        HellasControlVersionCommand.register(event.getDispatcher());
-        HellasControlDependenciesCommand.register(event.getDispatcher());
-        HellasControlFeaturesCommand.register(event.getDispatcher());
     }
 
     /**
