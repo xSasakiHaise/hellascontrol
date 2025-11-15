@@ -2,6 +2,10 @@ package com.xsasakihaise.hellascontrol.license;
 
 import java.util.List;
 
+/**
+ * POJO mirroring the JSON schema returned by the remote WordPress licensing
+ * endpoint.
+ */
 public final class LicenseResponse {
     private String status;     // "valid" | "expired" | "revoked" | "not_found" | "mismatch"
     private String licenseId;
@@ -15,5 +19,6 @@ public final class LicenseResponse {
     public String getExpires() { return expires; }
     public List<String> getEntitlements() { return entitlements; }
 
+    /** Default constructor used by Gson. */
     public LicenseResponse() {}
 }

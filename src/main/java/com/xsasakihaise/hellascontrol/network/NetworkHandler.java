@@ -12,6 +12,11 @@ import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 import java.util.function.Supplier;
 
+/**
+ * Owns the SimpleChannel used for the HellasControl ping/pong handshake. The
+ * handshake lets clients verify that the connected server both has the mod
+ * installed and holds a valid license before gameplay continues.
+ */
 public final class NetworkHandler {
 
     private static final String PROTOCOL = "1";
@@ -19,6 +24,7 @@ public final class NetworkHandler {
 
     private NetworkHandler(){}
 
+    /** Registers the network channel and both handshake packet types. */
     public static void register() {
         CHANNEL = NetworkRegistry.newSimpleChannel(
                 new ResourceLocation(HellasControl.MODID, "main"),
@@ -32,7 +38,7 @@ public final class NetworkHandler {
                 ModPong::encode, ModPong::decode, NetworkHandler::handlePong);
     }
 
-    // Client -> Server
+    /** Handles {@link ModPing} packets sent from clients once they join a server. */
     private static void handlePing(ModPing msg, Supplier<net.minecraftforge.fml.network.NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayerEntity player = ctx.get().getSender();
@@ -47,7 +53,7 @@ public final class NetworkHandler {
         ctx.get().setPacketHandled(true);
     }
 
-    // Server -> Client
+    /** Handles {@link ModPong} packets on the client after the server responds. */
     private static void handlePong(ModPong msg, Supplier<net.minecraftforge.fml.network.NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             com.xsasakihaise.hellascontrol.ClientModState.onHandshakeResult(
