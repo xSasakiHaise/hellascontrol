@@ -5,6 +5,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Immutable snapshot of the Hellas license state as read from disk or
+ * received from the remote verification endpoint. Instances are shared by
+ * {@link com.xsasakihaise.hellascontrol.HellasControl} and sidemods for
+ * entitlement checks.
+ */
 public final class LicenseCache {
     private static final Gson GSON = new Gson();
 
@@ -20,10 +26,17 @@ public final class LicenseCache {
     public String getMessage() { return message; }
     public String getExpires() { return expires; }
     public String getServerUrl() { return serverUrl; }
+    /**
+     * @return immutable list of entitlements granted by the license
+     */
     public List<String> getEntitlements() {
         return entitlements == null ? Collections.emptyList() : Collections.unmodifiableList(entitlements);
     }
 
+    /**
+     * Parses the cached {@code license.json} stored on the server. Returns an
+     * invalid cache if the file is corrupt.
+     */
     public static LicenseCache fromJson(String json) {
         try {
             LicenseCache c = GSON.fromJson(json, LicenseCache.class);
@@ -34,6 +47,10 @@ public final class LicenseCache {
         }
     }
 
+    /**
+     * Converts a {@link LicenseResponse} from the remote API to a cache entry
+     * that can be stored locally.
+     */
     public static LicenseCache fromResponse(LicenseResponse r) {
         LicenseCache c = new LicenseCache();
         c.valid = "valid".equalsIgnoreCase(r.getStatus());
@@ -44,6 +61,9 @@ public final class LicenseCache {
         return c;
     }
 
+    /**
+     * Factory helper for an invalid cache with a descriptive message.
+     */
     public static LicenseCache invalid(String msg) {
         LicenseCache c = new LicenseCache();
         c.valid = false;

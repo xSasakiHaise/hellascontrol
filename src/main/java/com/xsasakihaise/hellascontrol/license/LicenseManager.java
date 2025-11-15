@@ -7,6 +7,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Optional;
 
+/**
+ * Coordinates reading the on-disk license file and optionally verifying it
+ * with the remote licensing API. Other systems query this class for the last
+ * cached {@link LicenseCache}.
+ */
 public final class LicenseManager {
 
     private static LicenseCache cached = LicenseCache.invalid("Uninitialized");
@@ -14,6 +19,11 @@ public final class LicenseManager {
 
     private LicenseManager() {}
 
+    /**
+     * Initializes the license manager for the provided server root. The method
+     * creates {@code config/hellas/license.json} if missing and populates the
+     * {@link #cached} snapshot.
+     */
     public static void initialize(Path serverRoot) {
         // serverRoot already a Path — do NOT .toPath()
         Path rootConfig = (serverRoot != null)
@@ -39,6 +49,12 @@ public final class LicenseManager {
         }
     }
 
+    /**
+     * Attempts to validate the cached license. On failure it makes a best
+     * effort call to the remote verification endpoint.
+     *
+     * @return {@code true} if the server currently holds a valid license
+     */
     public static boolean verifyServer() {
         if (cached.isValid()) return true;
         Optional<LicenseResponse> resp = LicenseServerClient.verifyRemote(cached);
@@ -48,5 +64,8 @@ public final class LicenseManager {
         return cached.isValid();
     }
 
+    /**
+     * @return latest cached license snapshot
+     */
     public static LicenseCache getCached() { return cached; }
 }

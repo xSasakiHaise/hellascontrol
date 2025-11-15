@@ -4,6 +4,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 
+/**
+ * Forge event subscriber that runs the license enforcement when a dedicated
+ * server starts.
+ */
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LicenseEvents {
 

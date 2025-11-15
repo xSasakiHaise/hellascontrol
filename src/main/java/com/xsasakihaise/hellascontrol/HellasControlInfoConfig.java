@@ -1,4 +1,3 @@
-// java
 package com.xsasakihaise.hellascontrol;
 
 import com.google.gson.Gson;
@@ -13,6 +12,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Represents the human-readable metadata file bundled with the core mod. The
+ * file lists version strings, dependencies, and feature highlights that can be
+ * displayed by administrative tools or launcher UIs to describe the server's
+ * Hellas stack.
+ */
 public class HellasControlInfoConfig {
 
     private transient final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -24,6 +29,13 @@ public class HellasControlInfoConfig {
 
     private boolean valid = false;
 
+    /**
+     * Loads the JSON descriptor from {@code config/hellas/patcher/} under the
+     * given server root. If the file is missing, the class falls back to the
+     * in-jar defaults.
+     *
+     * @param serverRoot base directory of the dedicated server instance
+     */
     public void load(File serverRoot) {
         File configDir = new File(serverRoot, "config/hellas/patcher/");
         if (!configDir.exists()) configDir.mkdirs();
@@ -52,6 +64,11 @@ public class HellasControlInfoConfig {
         loadDefaultsFromResource();
     }
 
+    /**
+     * Loads {@code config/hellaspatcher.json} from the mod JAR. This ensures we
+     * always have a default set of descriptive strings even if the server never
+     * exported the editable JSON file.
+     */
     public void loadDefaultsFromResource() {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("config/hellaspatcher.json")) {
             if (is != null) {
@@ -74,8 +91,15 @@ public class HellasControlInfoConfig {
         }
     }
 
+    /**
+     * @return {@code true} if the JSON descriptor parsed successfully
+     */
     public boolean isValid() { return valid; }
 
+    /**
+     * Persists the in-memory representation to disk. This is typically called
+     * only when a server admin edits values via an in-game UI.
+     */
     public void save() {
         if (configFile == null) return;
         try (FileWriter writer = new FileWriter(configFile)) {
@@ -85,7 +109,18 @@ public class HellasControlInfoConfig {
         }
     }
 
+    /**
+     * @return semantic version string displayed to users
+     */
     public String getVersion() { return version; }
+
+    /**
+     * @return list of dependent Hellas modules or modids
+     */
     public String[] getDependencies() { return dependencies; }
+
+    /**
+     * @return highlight strings describing this installation
+     */
     public String[] getFeatures() { return features; }
 }

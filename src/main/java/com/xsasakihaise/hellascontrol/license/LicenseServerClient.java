@@ -96,7 +96,10 @@ public final class LicenseServerClient {
         }
     }
 
-    /** Persist and return a stable machine ID under config/hellas/machine.id */
+    /**
+     * Persist and return a stable machine ID under {@code config/hellas/machine.id}.
+     * The identifier is required by the WP endpoint to bind licenses to hosts.
+     */
     private static String ensureMachineId() {
         Path configDir = FMLPaths.CONFIGDIR.get().resolve("hellas");
         Path file = configDir.resolve("machine.id");
@@ -117,6 +120,7 @@ public final class LicenseServerClient {
         }
     }
 
+    /** Utility to drain an InputStream into a byte array. */
     private static byte[] readAll(InputStream is) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] buf = new byte[4096];
