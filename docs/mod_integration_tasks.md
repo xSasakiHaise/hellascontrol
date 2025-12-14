@@ -28,6 +28,17 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
      ```
 2. **Add HellasControl to the Gradle classpath.**
    - In your mod project `build.gradle`, add the HellasControl JAR (local file or Maven coordinate) to `dependencies { compileOnly ... }` so the API classes above compile.
+   - To pull the library straight from the public GitHub repo via JitPack, add the repository and dependency:
+     ```groovy
+     repositories {
+         maven { url 'https://jitpack.io' }
+     }
+
+     dependencies {
+         compileOnly fg.deobf('com.github.xSasakiHaise:hellascontrol:2.0.0')
+     }
+     ```
+   - Swap the version string to match the release tag you target, or replace `compileOnly` with `implementation` if you shade the API into your mod.
 3. **Import the licence helper you need.**
    - In the mod entry class (usually under `src/main/java/<your package>/<YourMod>.java`), add the relevant import, e.g.:
      ```java
@@ -47,6 +58,8 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
      HellasAPIHellasBattlebuddy.verify();
      ```
    - Do **not** wrap these in a catch that swallows the exception—the mod must abort if the licence fails.
+   - Keep the calls in your primary mod class (the one annotated with `@Mod`). That ensures the entitlement checks run before
+     any registries or side-setup hooks can introduce unlicensed content.
 5. **Optionally short-circuit when HellasControl is absent on clients.**
    - Add the Forge helper import if you do not have it already:
      ```java
@@ -58,6 +71,14 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
          return; // skip everything because the whole mod is licensed
      }
      ```
+
+### Integration Self-Check for Sidemod Main Classes
+- Confirm the verification block above executes from your mod's entry class constructor or common-setup handler—not from a
+  later event. The goal is to fail fast and avoid partially registering content before licence validation.
+- If your mod splits client and server initialisation, keep the entitlement call on the server-only path and leave the core
+  presence check in the shared path so single-player still validates.
+- Re-run your build to confirm no accidental refactors removed the imports or calls; the mod should refuse to boot when the
+  entitlement is missing on a dedicated server.
 
 ## Verification Steps
 - Launch a dedicated server with a valid `config/hellas/license.json`; confirm the server reaches the “Done” state.
