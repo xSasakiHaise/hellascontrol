@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 final class AutoBisectConfig {
@@ -18,7 +19,7 @@ final class AutoBisectConfig {
     String tempRoot = "mod_bisect_runs";
     int maxLogLines = 200;
     List<String> baseline = new ArrayList<>();
-    List<String> copyDirs = List.of("config", "defaultconfigs");
+    List<String> copyDirs = Arrays.asList("config", "defaultconfigs");
 
     static AutoBisectConfig load(Path serverRoot) {
         Path configDir = serverRoot.resolve("config").resolve("hellas");
