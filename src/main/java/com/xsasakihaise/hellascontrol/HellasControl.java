@@ -4,15 +4,27 @@ import com.xsasakihaise.hellascontrol.enforcement.LicenseEnforcer;
 import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
 import com.xsasakihaise.hellascontrol.network.NetworkHandler;
+import com.xsasakihaise.hellascontrol.bisect.AutoBisectRunner;
 
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
+import net.minecraftforge.fml.ModList;
 
 import java.util.Locale;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 
 /**
  * Entry point for the Hellas Control core mod.
@@ -32,6 +44,8 @@ import java.util.Locale;
 public class HellasControl {
 
     public static final String MODID = "hellascontrol";
+    private static final Logger LOGGER = LogManager.getLogger(HellasControl.class);
+    private static final Marker DIAGNOSTICS = MarkerManager.getMarker("HELLASCONTROL");
 
     public static HellasControlInfoConfig infoConfig;
     private static volatile boolean initialized = false;
@@ -54,6 +68,8 @@ public class HellasControl {
 
         // Network channel for client<->server handshake (ping/pong)
         NetworkHandler.register();
+
+        logModList();
     }
 
     /**
@@ -62,7 +78,11 @@ public class HellasControl {
      * {@link #initialized} flag once the mod is ready to service API calls.
      */
     private void onCommonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> initialized = true);
+        LOGGER.info(DIAGNOSTICS, "[{}] CommonSetup start", MODID);
+        event.enqueueWork(() -> {
+            initialized = true;
+            LOGGER.info(DIAGNOSTICS, "[{}] CommonSetup end", MODID);
+        });
     }
 
     /**
@@ -75,8 +95,15 @@ public class HellasControl {
      */
     @SubscribeEvent
     public void onServerStart(FMLServerStartingEvent event) {
+        LOGGER.info(DIAGNOSTICS, "[{}] ServerStarting", MODID);
         // Resolve the dedicated server's root directory -> .../config/hellas/license.json
         java.nio.file.Path serverRoot = event.getServer().getServerDirectory().toPath();
+
+        if (AutoBisectRunner.maybeRun(serverRoot)) {
+            LOGGER.info(DIAGNOSTICS, "[{}] Auto-bisect completed; shutting down server.", MODID);
+            event.getServer().halt(true);
+            return;
+        }
 
         // Initialize license cache (local json for now; remote-ready later)
         LicenseManager.initialize(serverRoot);
@@ -90,6 +117,35 @@ public class HellasControl {
         // Load/refresh human-readable info config from server root, if you keep it there
         // (optional; no-op if your HellasControlInfoConfig handles only in-jar defaults)
         // infoConfig.load(serverRoot.toFile());
+    }
+
+    @SubscribeEvent
+    public void onWorldLoad(WorldEvent.Load event) {
+        if (event.getWorld().isClientSide()) return;
+        LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, event.getWorld().dimension().location());
+    }
+
+    private static void logModList() {
+        List<ModInfo> mods = ModList.get().getMods();
+        String summary = mods.stream()
+                .map(mod -> mod.getModId() + ":" + mod.getVersion().toString())
+                .collect(Collectors.joining(", "));
+        String hellasSummary = mods.stream()
+                .filter(mod -> mod.getModId().startsWith("hellas"))
+                .map(mod -> mod.getModId() + ":" + mod.getVersion().toString())
+                .collect(Collectors.joining(", "));
+        LOGGER.info(DIAGNOSTICS, "[{}] Active mods ({}): {}", MODID, mods.size(), summary);
+        if (!hellasSummary.isEmpty()) {
+            LOGGER.info(DIAGNOSTICS, "[{}] Hellas suite versions: {}", MODID, hellasSummary);
+        }
+    }
+
+    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+    public static class RegistryDiagnostics {
+        @SubscribeEvent
+        public static void onRegistryRegister(RegistryEvent.Register<?> event) {
+            LOGGER.info(DIAGNOSTICS, "[{}] Registry event: {}", MODID, event.getRegistry().getRegistryName());
+        }
     }
 
     /**
