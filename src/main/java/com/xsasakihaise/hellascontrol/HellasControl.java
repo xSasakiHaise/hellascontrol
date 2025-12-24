@@ -125,7 +125,7 @@ public class HellasControl {
         if (event.getWorld().isClientSide()) return;
         if (event.getWorld() instanceof ServerWorld) {
             ServerWorld world = (ServerWorld) event.getWorld();
-            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, world.getDimensionKey().location());
+            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, world.dimension().location());
         } else {
             LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, event.getWorld());
         }
