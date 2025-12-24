@@ -16,6 +16,7 @@ import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.fml.ModList;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.Locale;
 import java.util.List;
@@ -122,7 +123,12 @@ public class HellasControl {
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event) {
         if (event.getWorld().isClientSide()) return;
-        LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, event.getWorld().dimension().location());
+        if (event.getWorld() instanceof ServerWorld) {
+            ServerWorld world = (ServerWorld) event.getWorld();
+            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, world.getDimensionKey().location());
+        } else {
+            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, event.getWorld());
+        }
     }
 
     private static void logModList() {

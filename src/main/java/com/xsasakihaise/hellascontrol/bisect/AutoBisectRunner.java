@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -22,12 +24,12 @@ public final class AutoBisectRunner {
     private static final Logger LOGGER = LogManager.getLogger(AutoBisectRunner.class);
     private static final Marker DIAGNOSTICS = MarkerManager.getMarker("HELLASCONTROL_BISECT");
     private static final String CHILD_ENV = "HELLASCONTROL_BISECT_CHILD";
-    private static final List<String> SUCCESS_MARKERS = List.of(
+    private static final List<String> SUCCESS_MARKERS = Arrays.asList(
             "Preparing spawn area",
             "Done (",
             "Loaded world"
     );
-    private static final List<String> FAILURE_MARKERS = List.of(
+    private static final List<String> FAILURE_MARKERS = Arrays.asList(
             "Encountered an unexpected exception",
             "Exception",
             "ERROR"
@@ -45,7 +47,7 @@ public final class AutoBisectRunner {
             return false;
         }
 
-        if (config.launchCmd == null || config.launchCmd.isBlank()) {
+        if (isBlank(config.launchCmd)) {
             LOGGER.warn(DIAGNOSTICS, "Auto-bisect enabled but launchCmd is empty.");
             return false;
         }
@@ -59,7 +61,7 @@ public final class AutoBisectRunner {
     }
 
     private static void runBisect(Path serverRoot, AutoBisectConfig config) throws IOException, InterruptedException {
-        Path modsDir = config.modsDir == null || config.modsDir.isBlank()
+        Path modsDir = isBlank(config.modsDir)
                 ? FMLPaths.MODSDIR.get()
                 : serverRoot.resolve(config.modsDir);
         Path tempRoot = serverRoot.resolve(config.tempRoot);
@@ -75,13 +77,13 @@ public final class AutoBisectRunner {
                 .collect(Collectors.toList());
 
         int runId = 1;
-        if (!runTest(serverRoot, tempRoot, baseline, List.of(), config, runId++)) {
+        if (!runTest(serverRoot, tempRoot, baseline, Collections.<Path>emptyList(), config, runId++)) {
             LOGGER.error(DIAGNOSTICS, "Baseline mods already fail; bisect cannot proceed.");
             return;
         }
 
         List<Path> minimalFailing = new ArrayList<>(candidates);
-        List<Path> lastPassing = List.of();
+        List<Path> lastPassing = Collections.emptyList();
 
         while (minimalFailing.size() > 1) {
             int mid = minimalFailing.size() / 2;
@@ -153,7 +155,7 @@ public final class AutoBisectRunner {
         Path logPath = gameDir.resolve("logs").resolve("latest.log");
         List<String> lines = Files.exists(logPath)
                 ? Files.readAllLines(logPath)
-                : List.of();
+                : Collections.<String>emptyList();
 
         boolean success = hasSuccess(lines);
         boolean failure = hasFailure(lines) || exitCode != 0;
@@ -200,6 +202,10 @@ public final class AutoBisectRunner {
         result.addAll(left);
         result.addAll(right);
         return result;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private static void copyTree(Path src, Path dst) throws IOException {
