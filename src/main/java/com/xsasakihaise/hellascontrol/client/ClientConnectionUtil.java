@@ -9,7 +9,7 @@ final class ClientConnectionUtil {
     private ClientConnectionUtil() {}
 
     static boolean isRemoteConnection(Minecraft mc) {
-        if (mc == null || mc.isSingleplayer()) {
+        if (mc == null || mc.getSingleplayerServer() != null) {
             LOGGER.info("[HellasControl] ClientConnectionUtil.isRemoteConnection -> false (singleplayer or null)");
             return false;
         }
@@ -18,7 +18,7 @@ final class ClientConnectionUtil {
             LOGGER.info("[HellasControl] ClientConnectionUtil.isRemoteConnection -> false (no connection)");
             return false;
         }
-        boolean remote = !handler.getConnection().isLocalChannel();
+        boolean remote = !handler.getConnection().isMemoryConnection();
         LOGGER.info("[HellasControl] ClientConnectionUtil.isRemoteConnection -> {}", remote);
         return remote;
     }
