@@ -6,9 +6,14 @@ package com.xsasakihaise.hellascontrol;
  * the remote server is licensed and to display custom disconnect reasons.
  */
 public final class ClientModState {
+    private static final org.apache.logging.log4j.Logger LOGGER =
+            org.apache.logging.log4j.LogManager.getLogger(ClientModState.class);
     private static volatile boolean serverHasHellas = false;
     private static volatile boolean serverLicensed = false;
     private static volatile String  serverMessage   = "";
+    private static volatile boolean handshakePending = false;
+    private static volatile boolean handshakeReceived = false;
+    private static volatile long handshakeSentAtMs = 0L;
 
     private ClientModState() {}
 
@@ -21,9 +26,13 @@ public final class ClientModState {
      * @param message     optional human-readable status text supplied by the server
      */
     public static void onHandshakeResult(boolean hasHellas, boolean isLicensed, String message) {
+        LOGGER.info("[HellasControl] ClientModState.onHandshakeResult hasHellas={} licensed={} message='{}'",
+                hasHellas, isLicensed, message);
         serverHasHellas = hasHellas;
         serverLicensed  = isLicensed;
         serverMessage   = message != null ? message : "";
+        handshakePending = false;
+        handshakeReceived = true;
     }
 
     /**
@@ -36,4 +45,45 @@ public final class ClientModState {
      * @return descriptive message accompanying the last handshake response
      */
     public static String  getServerMessage() { return serverMessage; }
+
+    public static void beginHandshake() {
+        LOGGER.info("[HellasControl] ClientModState.beginHandshake");
+        serverHasHellas = false;
+        serverLicensed = false;
+        serverMessage = "";
+        handshakePending = true;
+        handshakeReceived = false;
+        handshakeSentAtMs = System.currentTimeMillis();
+    }
+
+    public static void markHandshakeTimeout(String message) {
+        LOGGER.info("[HellasControl] ClientModState.markHandshakeTimeout message='{}'", message);
+        serverHasHellas = false;
+        serverLicensed = false;
+        serverMessage = message != null ? message : "";
+        handshakePending = false;
+        handshakeReceived = false;
+    }
+
+    public static boolean isHandshakePending() {
+        return handshakePending;
+    }
+
+    public static boolean hasHandshakeResponse() {
+        return handshakeReceived;
+    }
+
+    public static long getHandshakeSentAtMs() {
+        return handshakeSentAtMs;
+    }
+
+    public static void clear() {
+        LOGGER.info("[HellasControl] ClientModState.clear");
+        serverHasHellas = false;
+        serverLicensed = false;
+        serverMessage = "";
+        handshakePending = false;
+        handshakeReceived = false;
+        handshakeSentAtMs = 0L;
+    }
 }
