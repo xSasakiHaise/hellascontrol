@@ -41,6 +41,8 @@ public final class LicenseCache {
         try {
             LicenseCache c = GSON.fromJson(json, LicenseCache.class);
             if (c.entitlements == null) c.entitlements = new ArrayList<>();
+            org.apache.logging.log4j.LogManager.getLogger(LicenseCache.class)
+                    .info("[HellasControl] LicenseCache loaded from json");
             return c;
         } catch (Exception e) {
             return invalid("Corrupt license.json");
@@ -58,6 +60,8 @@ public final class LicenseCache {
         c.message = r.getMessage();
         c.expires = r.getExpires();
         c.entitlements = new ArrayList<>(r.getEntitlements() == null ? Collections.emptyList() : r.getEntitlements());
+        org.apache.logging.log4j.LogManager.getLogger(LicenseCache.class)
+                .info("[HellasControl] LicenseCache loaded from response status={}", r.getStatus());
         return c;
     }
 
@@ -69,6 +73,22 @@ public final class LicenseCache {
         c.valid = false;
         c.message = msg;
         c.entitlements = new ArrayList<>();
+        org.apache.logging.log4j.LogManager.getLogger(LicenseCache.class)
+                .info("[HellasControl] LicenseCache invalid: {}", msg);
+        return c;
+    }
+
+    /**
+     * Creates a cache entry from a plain-text license ID.
+     */
+    public static LicenseCache fromLicenseId(String licenseId) {
+        LicenseCache c = new LicenseCache();
+        c.valid = false;
+        c.licenseId = licenseId == null ? "" : licenseId.trim();
+        c.message = c.licenseId.isEmpty() ? "Missing license.txt entry" : "License loaded from license.txt";
+        c.entitlements = new ArrayList<>();
+        org.apache.logging.log4j.LogManager.getLogger(LicenseCache.class)
+                .info("[HellasControl] LicenseCache created from license id");
         return c;
     }
 }

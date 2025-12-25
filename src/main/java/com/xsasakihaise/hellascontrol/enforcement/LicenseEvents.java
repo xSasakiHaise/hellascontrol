@@ -13,15 +13,10 @@ public final class LicenseEvents {
 
     @SubscribeEvent
     public static void onServerStart(FMLServerStartingEvent e) {
-        try {
-            boolean ok = LicenseEnforcer.enforceServerLicense();
-            if (ok) {
-                System.out.println("[HellasControl] License validated successfully.");
-            } else {
-                System.err.println("[HellasControl] License validation failed or missing.");
-            }
-        } catch (Exception ex) {
-            System.err.println("[HellasControl] License validation error: " + ex.getMessage());
+        System.out.println("[HellasControl] LicenseEvents.onServerStart");
+        if (!e.getServer().isDedicatedServer()) {
+            return;
         }
+        System.out.println("[HellasControl] License enforcement handled by HellasControl.onServerStart.");
     }
 }

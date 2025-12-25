@@ -5,6 +5,7 @@ import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
 import com.xsasakihaise.hellascontrol.network.NetworkHandler;
 import com.xsasakihaise.hellascontrol.bisect.AutoBisectRunner;
+import com.xsasakihaise.hellascontrol.config.HellasControlDebugConfig;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
@@ -16,6 +17,7 @@ import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.Locale;
@@ -49,6 +51,7 @@ public class HellasControl {
     private static final Marker DIAGNOSTICS = MarkerManager.getMarker("HELLASCONTROL");
 
     public static HellasControlInfoConfig infoConfig;
+    public static HellasControlDebugConfig debugConfig;
     private static volatile boolean initialized = false;
 
     /**
@@ -57,6 +60,7 @@ public class HellasControl {
      * explicit callbacks so that Forge can control the threading model.
      */
     public HellasControl() {
+        LOGGER.info(DIAGNOSTICS, "[{}] Constructing mod instance", MODID);
         // Load default display/info config bundled in the jar
         infoConfig = new HellasControlInfoConfig();
         infoConfig.loadDefaultsFromResource();
@@ -66,6 +70,8 @@ public class HellasControl {
 
         // Register FORGE-bus listeners (server start)
         MinecraftForge.EVENT_BUS.register(this);
+
+        debugConfig = HellasControlDebugConfig.load(FMLPaths.CONFIGDIR.get().resolve("hellascontrol"));
 
         // Network channel for client<->server handshake (ping/pong)
         NetworkHandler.register();
@@ -81,6 +87,7 @@ public class HellasControl {
     private void onCommonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info(DIAGNOSTICS, "[{}] CommonSetup start", MODID);
         event.enqueueWork(() -> {
+            LOGGER.info(DIAGNOSTICS, "[{}] CommonSetup work enqueued", MODID);
             initialized = true;
             LOGGER.info(DIAGNOSTICS, "[{}] CommonSetup end", MODID);
         });
@@ -89,7 +96,7 @@ public class HellasControl {
     /**
      * SERVER-ONLY callback fired when a dedicated server finishes its startup
      * sequence. The method initializes the {@link LicenseManager} to read the
-     * server's {@code config/hellas/license.json} file and immediately runs the
+     * server's {@code config/hellascontrol/license.txt} file and immediately runs the
      * {@link LicenseEnforcer} to validate entitlements before gameplay begins.
      *
      * @param event Forge lifecycle event exposing the dedicated server instance
@@ -97,8 +104,13 @@ public class HellasControl {
     @SubscribeEvent
     public void onServerStart(FMLServerStartingEvent event) {
         LOGGER.info(DIAGNOSTICS, "[{}] ServerStarting", MODID);
-        // Resolve the dedicated server's root directory -> .../config/hellas/license.json
+        if (!event.getServer().isDedicatedServer()) {
+            LOGGER.info(DIAGNOSTICS, "[{}] Integrated server detected; skipping license enforcement.", MODID);
+            return;
+        }
+        // Resolve the dedicated server's root directory -> .../config/hellascontrol/license.txt
         java.nio.file.Path serverRoot = event.getServer().getServerDirectory().toPath();
+        LOGGER.info(DIAGNOSTICS, "[{}] Dedicated server root: {}", MODID, serverRoot);
 
         if (AutoBisectRunner.maybeRun(serverRoot)) {
             LOGGER.info(DIAGNOSTICS, "[{}] Auto-bisect completed; shutting down server.", MODID);
@@ -106,13 +118,20 @@ public class HellasControl {
             return;
         }
 
+        java.nio.file.Path licenseFile = LicenseManager.ensureLicenseFile(serverRoot);
+        LOGGER.info(DIAGNOSTICS, "[{}] License file ensured at {}", MODID, licenseFile);
+
         // Initialize license cache (local json for now; remote-ready later)
+        LOGGER.info(DIAGNOSTICS, "[{}] Initializing LicenseManager", MODID);
         LicenseManager.initialize(serverRoot);
 
         // Enforce server license (sets internal flag used by handshake)
         boolean ok = LicenseEnforcer.enforceServerLicense();
         if (!ok) {
-            System.err.println("[HellasControl] WARNING: Server not licensed. Clients will refuse to play.");
+            System.err.println("[HellasControl] ERROR: Server not licensed.");
+            System.err.println("[HellasControl] Please insert license and restart: " + licenseFile);
+            event.getServer().halt(true);
+            return;
         }
 
         // Load/refresh human-readable info config from server root, if you keep it there

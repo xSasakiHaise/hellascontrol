@@ -22,6 +22,8 @@ import java.util.UUID;
  * - Expects JSON with: status, licenseId, message, expires, entitlements[], signature
  */
 public final class LicenseServerClient {
+    private static final org.apache.logging.log4j.Logger LOGGER =
+            org.apache.logging.log4j.LogManager.getLogger(LicenseServerClient.class);
 
     // If you later want to make this configurable, read it from license.json and fall back to this default.
     private static final String VERIFY_URL =
@@ -36,12 +38,14 @@ public final class LicenseServerClient {
      * Returns Optional.empty() on network/parse errors (caller should keep local cache state).
      */
     public static Optional<LicenseResponse> verifyRemote(LicenseCache current) {
+        LOGGER.info("[HellasControl] LicenseServerClient.verifyRemote");
         try {
             String licenseId = (current != null && current.getLicenseId() != null)
                     ? current.getLicenseId().trim()
                     : "";
 
             if (licenseId.isEmpty()) {
+                LOGGER.info("[HellasControl] LicenseServerClient: empty license id, skipping remote verify");
                 return Optional.empty(); // nothing to verify yet
             }
 
@@ -84,10 +88,12 @@ public final class LicenseServerClient {
                  Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 LicenseResponse resp = GSON.fromJson(reader, LicenseResponse.class);
                 if (resp == null || resp.getStatus() == null) {
+                    LOGGER.info("[HellasControl] LicenseServerClient: null/invalid response");
                     return Optional.empty();
                 }
                 // Optional: verify HMAC signature here if you want (the WP plugin returns "signature")
                 // You'd need to share the secret or fetch it via a secure method; skipping for now.
+                LOGGER.info("[HellasControl] LicenseServerClient: remote verify status={}", resp.getStatus());
                 return Optional.of(resp);
             }
         } catch (Exception e) {
@@ -97,21 +103,26 @@ public final class LicenseServerClient {
     }
 
     /**
-     * Persist and return a stable machine ID under {@code config/hellas/machine.id}.
+     * Persist and return a stable machine ID under {@code config/hellascontrol/machine.id}.
      * The identifier is required by the WP endpoint to bind licenses to hosts.
      */
     private static String ensureMachineId() {
-        Path configDir = FMLPaths.CONFIGDIR.get().resolve("hellas");
+        LOGGER.info("[HellasControl] LicenseServerClient.ensureMachineId");
+        Path configDir = FMLPaths.CONFIGDIR.get().resolve("hellascontrol");
         Path file = configDir.resolve("machine.id");
         try {
             Files.createDirectories(configDir);
             if (Files.exists(file)) {
                 String v = new String(Files.readAllBytes(file), StandardCharsets.UTF_8).trim();
-                if (!v.isEmpty()) return v;
+                if (!v.isEmpty()) {
+                    LOGGER.info("[HellasControl] LicenseServerClient machine.id loaded");
+                    return v;
+                }
             }
             String generated = UUID.randomUUID().toString();
             Files.write(file, generated.getBytes(StandardCharsets.UTF_8),
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            LOGGER.info("[HellasControl] LicenseServerClient machine.id generated");
             return generated;
         } catch (IOException io) {
             // As a last resort, return a volatile UUID (won't bind properly)
