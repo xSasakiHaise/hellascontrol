@@ -29,12 +29,13 @@ public final class ClientEnforcer {
             if (msg == null || msg.isEmpty()) {
                 msg = "Server is not licensed. Please contact the server owner.";
             }
+            String finalMsg = msg;
 
             ClientPlayNetHandler handler = mc.getConnection();
             if (handler != null) {
                 // This shows the “Disconnected” screen with your message and closes the connection.
-                LOGGER.info("[HellasControl] ClientEnforcer.disconnect (unlicensed) message='{}'", msg);
-                mc.execute(() -> handler.onDisconnect(new StringTextComponent(msg)));
+                LOGGER.info("[HellasControl] ClientEnforcer.disconnect (unlicensed) message='{}'", finalMsg);
+                mc.execute(() -> handler.onDisconnect(new StringTextComponent(finalMsg)));
             }
         }
     }
