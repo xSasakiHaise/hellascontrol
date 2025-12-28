@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.xsasakihaise.hellascontrol"
-version = "2.0.0"
+version = "2.0.1"
 archivesBaseName = "hellascontrol"
 
 java {
@@ -35,7 +35,7 @@ jar {
                 "Specification-Vendor": "xSasaki_Haise",
                 "Specification-Version": "1",
                 "Implementation-Title": "HellasControl",
-                "Implementation-Version":"1.0.0",
+                "Implementation-Version":"2.0.1",
                 "Implementation-Vendor": "xSasaki_Haise"
         )
     }
