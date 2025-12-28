@@ -19,10 +19,13 @@ import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.Locale;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.nio.file.Path;
+import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,16 +112,18 @@ public class HellasControl {
             return;
         }
         // Resolve the dedicated server's root directory -> .../config/hellascontrol/license.txt
-        java.nio.file.Path serverRoot = event.getServer().getServerDirectory().toPath();
+        Path serverRoot = canonicalize(event.getServer().getServerDirectory().toPath());
+        Path configDir = canonicalize(FMLPaths.CONFIGDIR.get());
         LOGGER.info(DIAGNOSTICS, "[{}] Dedicated server root: {}", MODID, serverRoot);
+        LOGGER.info(DIAGNOSTICS, "[{}] Dedicated server config dir: {}", MODID, configDir);
 
         if (AutoBisectRunner.maybeRun(serverRoot)) {
             LOGGER.info(DIAGNOSTICS, "[{}] Auto-bisect completed; shutting down server.", MODID);
-            event.getServer().halt(true);
+            requestShutdown(event.getServer(), "Auto-bisect completed; shutting down server.", false);
             return;
         }
 
-        java.nio.file.Path licenseFile = LicenseManager.ensureLicenseFile(serverRoot);
+        Path licenseFile = LicenseManager.ensureLicenseFile(serverRoot);
         LOGGER.info(DIAGNOSTICS, "[{}] License file ensured at {}", MODID, licenseFile);
 
         // Initialize license cache (local json for now; remote-ready later)
@@ -129,8 +134,8 @@ public class HellasControl {
         boolean ok = LicenseEnforcer.enforceServerLicense();
         if (!ok) {
             System.err.println("[HellasControl] ERROR: Server not licensed.");
-            System.err.println("[HellasControl] Please insert license and restart: " + licenseFile);
-            event.getServer().halt(true);
+            System.err.println("[HellasControl] Please insert license and restart: " + canonicalize(licenseFile));
+            requestShutdown(event.getServer(), "HellasControl: Server not licensed.", true);
             return;
         }
 
@@ -231,6 +236,39 @@ public class HellasControl {
     public static void requireEntitlement(String key) {
         if (!hasEntitlement(key)) {
             throw new IllegalStateException("HellasControl: Missing entitlement '" + key + "'.");
+        }
+    }
+
+    private static void requestShutdown(MinecraftServer server, String reason, boolean throwAfter) {
+        if (server == null) {
+            if (throwAfter) {
+                throw new RuntimeException(reason);
+            }
+            return;
+        }
+        try {
+            server.stopServer();
+        } catch (Exception e) {
+            LOGGER.error(DIAGNOSTICS, "[{}] Failed to stop server cleanly.", MODID, e);
+        }
+        try {
+            server.halt(true);
+        } catch (Exception e) {
+            LOGGER.error(DIAGNOSTICS, "[{}] Failed to halt server.", MODID, e);
+        }
+        if (throwAfter) {
+            throw new RuntimeException(reason);
+        }
+    }
+
+    private static Path canonicalize(Path path) {
+        if (path == null) {
+            return null;
+        }
+        try {
+            return path.toRealPath();
+        } catch (IOException ignored) {
+            return path.toAbsolutePath().normalize();
         }
     }
 }

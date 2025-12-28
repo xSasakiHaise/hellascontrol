@@ -31,17 +31,14 @@ public final class LicenseManager {
     public static void initialize(Path serverRoot) {
         LOGGER.info("[HellasControl] LicenseManager.initialize serverRoot={}", serverRoot);
         // serverRoot already a Path — do NOT .toPath()
-        Path rootConfig = (serverRoot != null)
-                ? serverRoot.resolve("config")
-                : FMLPaths.CONFIGDIR.get();
-
-        configDir = rootConfig.resolve("hellascontrol");
+        Path rootConfig = resolveConfigDir(serverRoot);
+        configDir = canonicalize(rootConfig.resolve("hellascontrol"));
         LOGGER.info("[HellasControl] LicenseManager configDir={}", configDir);
         try {
             Files.createDirectories(configDir);
         } catch (IOException ignored) {}
 
-        licenseFile = configDir.resolve("license.txt");
+        licenseFile = canonicalize(configDir.resolve("license.txt"));
         LOGGER.info("[HellasControl] LicenseManager licenseFile={}", licenseFile);
         String licenseId = readLicenseId(licenseFile);
         if (!licenseId.isEmpty()) {
@@ -50,7 +47,7 @@ public final class LicenseManager {
             return;
         }
 
-        Path legacyFile = rootConfig.resolve("hellas").resolve("license.json");
+        Path legacyFile = canonicalize(rootConfig.resolve("hellas").resolve("license.json"));
         LOGGER.info("[HellasControl] LicenseManager legacyFile={}", legacyFile);
         if (Files.exists(legacyFile)) {
             try {
@@ -62,18 +59,21 @@ public final class LicenseManager {
                 cached = LicenseCache.invalid("Failed to read legacy license.json");
             }
         } else {
-            LOGGER.info("[HellasControl] LicenseManager did not find license.txt or legacy license.json");
-            cached = LicenseCache.invalid("No license.txt found");
+            if (Files.exists(licenseFile)) {
+                LOGGER.info("[HellasControl] LicenseManager license id empty in license.txt");
+                cached = LicenseCache.invalid("License id empty");
+            } else {
+                LOGGER.info("[HellasControl] LicenseManager did not find license.txt or legacy license.json");
+                cached = LicenseCache.invalid("No license.txt found");
+            }
         }
     }
 
     public static Path ensureLicenseFile(Path serverRoot) {
         LOGGER.info("[HellasControl] LicenseManager.ensureLicenseFile serverRoot={}", serverRoot);
-        Path rootConfig = (serverRoot != null)
-                ? serverRoot.resolve("config")
-                : FMLPaths.CONFIGDIR.get();
-        Path dir = rootConfig.resolve("hellascontrol");
-        Path file = dir.resolve("license.txt");
+        Path rootConfig = resolveConfigDir(serverRoot);
+        Path dir = canonicalize(rootConfig.resolve("hellascontrol"));
+        Path file = canonicalize(dir.resolve("license.txt"));
         try {
             Files.createDirectories(dir);
             if (!Files.exists(file)) {
@@ -130,7 +130,29 @@ public final class LicenseManager {
                 return trimmed;
             }
         } catch (IOException ignored) {}
-        LOGGER.info("[HellasControl] LicenseManager readLicenseId found no license id");
+        LOGGER.info("[HellasControl] LicenseManager readLicenseId license id empty");
         return "";
+    }
+
+    private static Path resolveConfigDir(Path serverRoot) {
+        Path configPath = null;
+        try {
+            configPath = FMLPaths.CONFIGDIR.get();
+        } catch (Exception ignored) {}
+        if (configPath == null && serverRoot != null) {
+            configPath = serverRoot.resolve("config");
+        }
+        return canonicalize(configPath);
+    }
+
+    private static Path canonicalize(Path path) {
+        if (path == null) {
+            return null;
+        }
+        try {
+            return path.toRealPath();
+        } catch (IOException ignored) {
+            return path.toAbsolutePath().normalize();
+        }
     }
 }
