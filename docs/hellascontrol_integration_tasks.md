@@ -1,6 +1,6 @@
 # HellasControl Integration Tasks
 
-Use this checklist when preparing a HellasControl release (currently `v2.0.0` for Minecraft `1.16.5`) to ensure third-party mods keep working against the published hooks.
+Use this checklist when preparing a HellasControl release (currently `v2.0.1` for Minecraft `1.21.1`) to ensure third-party mods keep working against the published hooks.
 
 ## Keep the Public Hooks Stable
 - Preserve the behaviour of `com.xsasakihaise.hellascontrol.HellasControl#hasEntitlement` and `#requireEntitlement` so sidemods can gate their features on the same entitlements as the base mod.
@@ -14,7 +14,7 @@ Use this checklist when preparing a HellasControl release (currently `v2.0.0` fo
 - Provide changelog notes describing new or removed licence entitlements so dependent mods can adjust their checks.
 
 ## Validate Dedicated-Server Behaviour
-- Spin up a dedicated Forge 1.16.5 server with the release candidate and confirm `LicenseManager.initialize` reads the licence file from the `config/hellas` directory.
+- Spin up a dedicated NeoForge 1.21.1 server with the release candidate and confirm `LicenseManager.initialize` reads the licence file from the `config/hellas` directory.
 - Connect a development client to verify the handshake reported by `NetworkHandler` and that `ClientEnforcer` only disconnects players when the server is actually unlicensed.
 - Exercise any sample sidemod that calls `HellasControl.requireEntitlement` to confirm integration points remain intact.
 
