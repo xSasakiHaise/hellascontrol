@@ -1,8 +1,9 @@
 package com.xsasakihaise.hellascontrol.api;
 
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import com.xsasakihaise.hellascontrol.HellasControl;
+import com.xsasakihaise.hellascontrol.client.ClientEnforcer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 /**
  * Shared verification helpers for all Hellas sidemods. The methods are meant
@@ -26,10 +27,26 @@ public final class CoreCheck {
      * crashing a player who connects to an unlicensed server.
      */
     public static void verifyEntitled(String entitlementKey) {
-        if (!FMLEnvironment.dist.isDedicatedServer()) {
-            // Ignore on client/integrated to avoid false crashes; server enforces.
+        if (FMLEnvironment.dist.isDedicatedServer()) {
+            HellasControl.requireEntitlement(entitlementKey);
+        }
+    }
+
+    public static boolean isDedicatedServer() {
+        return FMLEnvironment.dist.isDedicatedServer();
+    }
+
+    public static boolean getServerLicensedClientSide() {
+        return HellasControl.isServerLicensedClientSide();
+    }
+
+    public static void requireServerLicensedClientSide() {
+        if (!FMLEnvironment.dist.isClient()) {
             return;
         }
-        HellasControl.requireEntitlement(entitlementKey);
+        if (!getServerLicensedClientSide()) {
+            ClientEnforcer.disconnectForMissingServer(
+                    "This server is not licensed to run HellasControl / Hephaestus Forge software.");
+        }
     }
 }

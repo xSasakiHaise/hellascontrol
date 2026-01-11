@@ -1,6 +1,11 @@
 package com.xsasakihaise.hellascontrol.enforcement;
 
+import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.network.chat.Component;
 
 /**
  * Performs the actual license verification and exposes the result for other
@@ -23,6 +28,65 @@ public final class LicenseEnforcer {
         serverLicensed = LicenseManager.verifyServer();
         System.out.println("[HellasControl] Server license status: " + (serverLicensed ? "VALID" : "INVALID"));
         return serverLicensed;
+    }
+
+    public static boolean enforceEntitlements(MinecraftServer server) {
+        if (server == null || !server.isDedicatedServer()) {
+            return true;
+        }
+        LicenseCache cache = LicenseManager.getCached();
+        if (cache == null || !cache.isLicensed()) {
+            LOGGER.error("[HellasControl] Entitlement check failed: license invalid.");
+            return false;
+        }
+        java.util.Set<String> entitled = new java.util.HashSet<>();
+        for (String ent : cache.getEntitlements()) {
+            if (ent != null && !ent.isBlank()) {
+                entitled.add(ent.toLowerCase(java.util.Locale.ROOT));
+            }
+        }
+        java.util.List<String> unauthorized = new java.util.ArrayList<>();
+        for (ModInfo mod : ModList.get().getMods()) {
+            String modId = mod.getModId();
+            if (modId.startsWith("hellas") && !modId.equals("hellascontrol")) {
+                String key = modId.replace("hellas", "");
+                if (!entitled.contains(key.toLowerCase(java.util.Locale.ROOT))) {
+                    unauthorized.add(modId);
+                }
+            }
+        }
+        if (!unauthorized.isEmpty()) {
+            LOGGER.error("[HellasControl] Unlicensed Hellas mods detected: {}", unauthorized);
+            return false;
+        }
+        return true;
+    }
+
+    public static void startExpiredTokenAnnouncements(MinecraftServer server) {
+        if (server == null || !server.isDedicatedServer()) {
+            return;
+        }
+        java.util.concurrent.ScheduledExecutorService executor =
+                java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                    Thread t = new Thread(r, "hellascontrol-token-expiry");
+                    t.setDaemon(true);
+                    return t;
+                });
+        executor.scheduleAtFixedRate(() -> {
+            try {
+                LicenseCache cache = LicenseManager.getCached();
+                if (cache == null) {
+                    return;
+                }
+                if (cache.isExpiredWithoutNext(java.time.Instant.now())) {
+                    server.execute(() -> server.getPlayerList()
+                            .broadcastSystemMessage(Component.literal(
+                                    "validation hash expired, pls restart the server to get a new one"), false));
+                }
+            } catch (Exception e) {
+                LOGGER.debug("[HellasControl] Token expiry announcement failed: {}", e.getMessage());
+            }
+        }, 60, 60, java.util.concurrent.TimeUnit.MINUTES);
     }
 
     /**

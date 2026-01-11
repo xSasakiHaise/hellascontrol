@@ -6,7 +6,7 @@ plugins {
     id 'java'
 }
 
-group = "com.xsasakihaise.hellascontrol"
+group = "com.github.xSasakiHaise"
 version = "2.0.1"
 archivesBaseName = "hellascontrol"
 
@@ -21,11 +21,28 @@ minecraft {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
 dependencies {
     minecraft 'net.neoforged:neoforge:21.1.65'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = "hellascontrol"
+            from components.java
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
 }
 
 jar {

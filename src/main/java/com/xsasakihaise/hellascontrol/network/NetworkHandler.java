@@ -2,16 +2,17 @@ package com.xsasakihaise.hellascontrol.network;
 
 import com.xsasakihaise.hellascontrol.HellasControl;
 import com.xsasakihaise.hellascontrol.enforcement.LicenseEnforcer;
+import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.NetworkDirection;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.NetworkDirection;
+import net.neoforged.neoforge.network.NetworkRegistry;
+import net.neoforged.neoforge.network.simple.SimpleChannel;
 
 import java.util.function.Supplier;
 
@@ -22,7 +23,7 @@ import java.util.function.Supplier;
  */
 public final class NetworkHandler {
 
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     private static final Logger LOGGER = LogManager.getLogger(NetworkHandler.class);
     public static SimpleChannel CHANNEL;
 
@@ -51,20 +52,29 @@ public final class NetworkHandler {
     }
 
     /** Handles {@link ModPing} packets sent from clients once they join a server. */
-    private static void handlePing(ModPing msg, Supplier<net.minecraftforge.fml.network.NetworkEvent.Context> ctx) {
+    private static void handlePing(ModPing msg, Supplier<net.neoforged.neoforge.network.NetworkEvent.Context> ctx) {
         LOGGER.info("[HellasControl] NetworkHandler.handlePing");
         ctx.get().enqueueWork(() -> {
-            ServerPlayerEntity player = ctx.get().getSender();
+            ServerPlayer player = ctx.get().getSender();
             boolean licensed = LicenseEnforcer.isServerLicensed();
-            String message = (LicenseManager.getCached() != null) ? LicenseManager.getCached().getMessage() : "";
+            LicenseCache cache = LicenseManager.getCached();
+            String message = (cache != null) ? cache.getMessage() : "";
             ModPong.HandshakeReason reason = licensed ? ModPong.HandshakeReason.OK : ModPong.HandshakeReason.UNLICENSED;
             if (HellasControl.debugConfig != null && HellasControl.debugConfig.isDebugHandshake()) {
                 LOGGER.info("[HellasControl] Handshake ping from {} -> has=true licensed={} message='{}'",
                         player != null ? player.getGameProfile().getName() : "<unknown>", licensed, message);
             }
+            String currentToken = cache != null ? cache.getCurrentToken() : "";
+            String nextToken = cache != null ? cache.getNextToken() : "";
+            long nowMs = System.currentTimeMillis();
+            long currentFrom = cache != null && cache.getCurrentValidFrom() != null ? cache.getCurrentValidFrom().toEpochMilli() : 0L;
+            long currentTo = cache != null && cache.getCurrentValidTo() != null ? cache.getCurrentValidTo().toEpochMilli() : 0L;
+            long nextFrom = cache != null && cache.getNextValidFrom() != null ? cache.getNextValidFrom().toEpochMilli() : 0L;
+            long nextTo = cache != null && cache.getNextValidTo() != null ? cache.getNextValidTo().toEpochMilli() : 0L;
+            String fingerprint = cache != null ? cache.getServerFingerprint() : "";
 
-            // 1.21.1: ServerPlayNetHandler.connection is the NetworkManager
-            CHANNEL.sendTo(new ModPong(true, licensed, reason, message),
+            CHANNEL.sendTo(new ModPong(true, licensed, reason, message, currentToken, nextToken,
+                            nowMs, currentFrom, currentTo, nextFrom, nextTo, fingerprint),
                     player.connection.connection,
                     NetworkDirection.PLAY_TO_CLIENT);
         });
@@ -72,7 +82,7 @@ public final class NetworkHandler {
     }
 
     /** Handles {@link ModPong} packets on the client after the server responds. */
-    private static void handlePong(ModPong msg, Supplier<net.minecraftforge.fml.network.NetworkEvent.Context> ctx) {
+    private static void handlePong(ModPong msg, Supplier<net.neoforged.neoforge.network.NetworkEvent.Context> ctx) {
         LOGGER.info("[HellasControl] NetworkHandler.handlePong");
         ctx.get().enqueueWork(() -> {
             if (HellasControl.debugConfig != null && HellasControl.debugConfig.isDebugHandshake()) {
@@ -80,8 +90,12 @@ public final class NetworkHandler {
                         msg.hasHellasControl, msg.serverLicensed, msg.reason, msg.message);
             }
             com.xsasakihaise.hellascontrol.ClientModState.onHandshakeResult(
-                    msg.hasHellasControl, msg.serverLicensed, msg.message);
-            com.xsasakihaise.hellascontrol.client.ClientEnforcer.checkAndDisconnectIfNeeded();
+                    msg.hasHellasControl, msg.serverLicensed, msg.message,
+                    msg.serverToken, msg.serverTokenNext,
+                    msg.serverTimeEpochMillis, msg.tokenValidFromEpochMillis, msg.tokenValidToEpochMillis,
+                    msg.nextTokenValidFromEpochMillis, msg.nextTokenValidToEpochMillis,
+                    msg.serverFingerprint);
+            com.xsasakihaise.hellascontrol.client.ClientEnforcer.handleHandshake();
         });
         ctx.get().setPacketHandled(true);
     }

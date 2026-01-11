@@ -18,25 +18,34 @@ public final class ClientEnforcer {
      * Checks the last handshake and forces a disconnect with a descriptive
      * message if the server is missing or unlicensed.
      */
-    public static void checkAndDisconnectIfNeeded() {
-        LOGGER.info("[HellasControl] ClientEnforcer.checkAndDisconnectIfNeeded");
+    public static void handleHandshake() {
+        LOGGER.info("[HellasControl] ClientEnforcer.handleHandshake");
         Minecraft mc = Minecraft.getInstance();
         if (!ClientConnectionUtil.isRemoteConnection(mc)) {
             return;
         }
-        if (!ClientModState.isServerLicensed()) {
+        if (!ClientModState.hasHandshakeResponse()) {
+            return;
+        }
+        if (!ClientModState.hasServerHellas()) {
+            disconnectForMissingServer("Server requires HellasControl.");
+            return;
+        }
+        if (!ClientModState.isServerReportedLicensed()) {
             String msg = ClientModState.getServerMessage();
             if (msg == null || msg.isEmpty()) {
                 msg = "Server is not licensed. Please contact the server owner.";
             }
-            String finalMsg = msg;
-
-            ClientPacketListener handler = mc.getConnection();
-            if (handler != null) {
-                // This shows the “Disconnected” screen with your message and closes the connection.
-                LOGGER.info("[HellasControl] ClientEnforcer.disconnect (unlicensed) message='{}'", finalMsg);
-                mc.execute(() -> handler.onDisconnect(Component.literal(finalMsg)));
+            disconnectForInvalidToken(msg);
+            return;
+        }
+        if (!ClientModState.isServerLicensed() && !ClientModState.isTokenValidationComplete()) {
+            if (!ClientModState.isTokenValidationInFlight()) {
+                validateServerToken();
             }
+        }
+        if (!ClientModState.isServerLicensed() && ClientModState.isTokenValidationComplete()) {
+            disconnectForInvalidToken("This server is not licensed to run HellasControl / Hephaestus Forge software.");
         }
     }
 
@@ -53,6 +62,27 @@ public final class ClientEnforcer {
         if (handler != null) {
             LOGGER.info("[HellasControl] ClientEnforcer.disconnect (missing server) message='{}'", msg);
             mc.execute(() -> handler.onDisconnect(Component.literal(msg)));
+        }
+    }
+
+    public static void disconnectForInvalidToken(String message) {
+        LOGGER.info("[HellasControl] ClientEnforcer.disconnectForInvalidToken message='{}'", message);
+        Minecraft mc = Minecraft.getInstance();
+        if (!ClientConnectionUtil.isRemoteConnection(mc)) {
+            return;
+        }
+        String msg = (message == null || message.isEmpty())
+                ? "This server is not licensed to run HellasControl / Hephaestus Forge software."
+                : message;
+        ClientPacketListener handler = mc.getConnection();
+        if (handler != null) {
+            mc.execute(() -> handler.onDisconnect(Component.literal(msg)));
+        }
+    }
+
+    private static void validateServerToken() {
+        if (!ClientModState.isHandshakePending() && ClientModState.hasHandshakeResponse()) {
+            ClientTokenVerifier.verifyTokenAsync();
         }
     }
 }

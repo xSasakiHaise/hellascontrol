@@ -1,12 +1,17 @@
 package com.xsasakihaise.hellascontrol.license;
 
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Coordinates reading the on-disk license file and optionally verifying it
@@ -20,6 +25,14 @@ public final class LicenseManager {
     private static LicenseCache cached = LicenseCache.invalid("Uninitialized");
     private static Path configDir;
     private static Path licenseFile;
+    private static final Object LOCK = new Object();
+    private static final ScheduledExecutorService REFRESH_EXECUTOR =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "hellascontrol-license-refresh");
+                t.setDaemon(true);
+                return t;
+            });
+    private static final AtomicBoolean REFRESH_SCHEDULED = new AtomicBoolean(false);
 
     private LicenseManager() {}
 
@@ -98,18 +111,50 @@ public final class LicenseManager {
      * @return {@code true} if the server currently holds a valid license
      */
     public static boolean verifyServer() {
-        if (cached.isValid()) return true;
         Optional<LicenseResponse> resp = LicenseServerClient.verifyRemote(cached);
         if (resp.isPresent()) {
-            cached = LicenseCache.fromResponse(resp.get());
+            synchronized (LOCK) {
+                cached = LicenseCache.fromResponse(resp.get());
+            }
+        } else {
+            synchronized (LOCK) {
+                cached = cached.withLastRefreshAttempt(Instant.now());
+            }
         }
-        return cached.isValid();
+        return cached != null && cached.isLicensed();
     }
 
     /**
      * @return latest cached license snapshot
      */
     public static LicenseCache getCached() { return cached; }
+
+    public static void startRefreshTask() {
+        if (!REFRESH_SCHEDULED.compareAndSet(false, true)) {
+            return;
+        }
+        REFRESH_EXECUTOR.scheduleAtFixedRate(() -> {
+            try {
+                LicenseCache before = cached;
+                if (before == null || before.getLicenseId() == null || before.getLicenseId().isBlank()) {
+                    return;
+                }
+                Optional<LicenseResponse> resp = LicenseServerClient.verifyRemote(before);
+                if (resp.isPresent()) {
+                    synchronized (LOCK) {
+                        cached = LicenseCache.fromResponse(resp.get());
+                    }
+                } else {
+                    synchronized (LOCK) {
+                        cached = cached.withLastRefreshAttempt(Instant.now());
+                    }
+                }
+            } catch (Exception e) {
+                org.apache.logging.log4j.LogManager.getLogger(LicenseManager.class)
+                        .debug("[HellasControl] Scheduled refresh failed: {}", e.getMessage());
+            }
+        }, 60, 60, TimeUnit.MINUTES);
+    }
 
     private static String readLicenseId(Path file) {
         if (file == null || !Files.exists(file)) {
