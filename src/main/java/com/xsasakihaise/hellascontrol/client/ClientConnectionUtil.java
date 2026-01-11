@@ -1,7 +1,7 @@
 package com.xsasakihaise.hellascontrol.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.network.play.ClientPlayNetHandler;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 
 final class ClientConnectionUtil {
     private static final org.apache.logging.log4j.Logger LOGGER =
@@ -13,7 +13,7 @@ final class ClientConnectionUtil {
             LOGGER.info("[HellasControl] ClientConnectionUtil.isRemoteConnection -> false (singleplayer or null)");
             return false;
         }
-        ClientPlayNetHandler handler = mc.getConnection();
+        ClientPacketListener handler = mc.getConnection();
         if (handler == null || handler.getConnection() == null) {
             LOGGER.info("[HellasControl] ClientConnectionUtil.isRemoteConnection -> false (no connection)");
             return false;

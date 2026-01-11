@@ -37,7 +37,7 @@ public final class ModPong {
         buf.writeBoolean(m.hasHellasControl);
         buf.writeBoolean(m.serverLicensed);
         buf.writeVarInt(m.reason.getId());
-        buf.writeUtf(m.message, 32767); // Correct for 1.16.5
+        buf.writeUtf(m.message, 32767); // Correct for 1.21.1
     }
 
     /** Deserializes the pong payload. */

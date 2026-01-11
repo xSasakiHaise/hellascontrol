@@ -1,6 +1,6 @@
 # Mod Integration Tasks for HellasControl
 
-This playbook is written so another OpenAI Codex instance (or any automation) can wire a mod into HellasControl `v2.0.0` on Minecraft `1.16.5` without guessing. Every step below maps to a concrete edit or code block.
+This playbook is written so another OpenAI Codex instance (or any automation) can wire a mod into HellasControl `v2.0.1` on Minecraft `1.21.1` without guessing. Every step below maps to a concrete edit or code block.
 
 ## Quick Reference to Boot-Time Licence Helpers
 | Helper | Located in | When to call | What it enforces |
@@ -61,7 +61,7 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
    - Keep the calls in your primary mod class (the one annotated with `@Mod`). That ensures the entitlement checks run before
      any registries or side-setup hooks can introduce unlicensed content.
 5. **Optionally short-circuit when HellasControl is absent on clients.**
-   - Add the Forge helper import if you do not have it already:
+   - Add the NeoForge helper import if you do not have it already:
      ```java
      import net.minecraftforge.fml.ModList;
      ```

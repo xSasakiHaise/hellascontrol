@@ -8,18 +8,18 @@ import com.xsasakihaise.hellascontrol.bisect.AutoBisectRunner;
 import com.xsasakihaise.hellascontrol.config.HellasControlDebugConfig;
 
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraftforge.registries.RegisterEvent;
 
 import java.util.Locale;
 import java.util.List;
@@ -84,7 +84,7 @@ public class HellasControl {
 
     /**
      * Runs during the mod's common setup stage. This is the recommended stage
-     * for non-world-thread work queues in Forge 1.16.x and is where we flip the
+     * for non-world-thread work queues in Forge 1.21.x and is where we flip the
      * {@link #initialized} flag once the mod is ready to service API calls.
      */
     private void onCommonSetup(final FMLCommonSetupEvent event) {
@@ -105,7 +105,7 @@ public class HellasControl {
      * @param event Forge lifecycle event exposing the dedicated server instance
      */
     @SubscribeEvent
-    public void onServerStart(FMLServerStartingEvent event) {
+    public void onServerStart(ServerStartingEvent event) {
         LOGGER.info(DIAGNOSTICS, "[{}] ServerStarting", MODID);
         if (!event.getServer().isDedicatedServer()) {
             LOGGER.info(DIAGNOSTICS, "[{}] Integrated server detected; skipping license enforcement.", MODID);
@@ -145,13 +145,13 @@ public class HellasControl {
     }
 
     @SubscribeEvent
-    public void onWorldLoad(WorldEvent.Load event) {
-        if (event.getWorld().isClientSide()) return;
-        if (event.getWorld() instanceof ServerWorld) {
-            ServerWorld world = (ServerWorld) event.getWorld();
-            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, world.dimension().location());
+    public void onWorldLoad(LevelEvent.Load event) {
+        if (event.getLevel().isClientSide()) return;
+        if (event.getLevel() instanceof ServerLevel) {
+            ServerLevel level = (ServerLevel) event.getLevel();
+            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, level.dimension().location());
         } else {
-            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, event.getWorld());
+            LOGGER.info(DIAGNOSTICS, "[{}] WorldLoad {}", MODID, event.getLevel());
         }
     }
 
@@ -173,8 +173,8 @@ public class HellasControl {
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static class RegistryDiagnostics {
         @SubscribeEvent
-        public static void onRegistryRegister(RegistryEvent.Register<?> event) {
-            LOGGER.info(DIAGNOSTICS, "[{}] Registry event: {}", MODID, event.getRegistry().getRegistryName());
+        public static void onRegistryRegister(RegisterEvent event) {
+            LOGGER.info(DIAGNOSTICS, "[{}] Registry event: {}", MODID, event.getRegistryKey());
         }
     }
 

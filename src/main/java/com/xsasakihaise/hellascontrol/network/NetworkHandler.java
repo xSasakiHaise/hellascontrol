@@ -63,7 +63,7 @@ public final class NetworkHandler {
                         player != null ? player.getGameProfile().getName() : "<unknown>", licensed, message);
             }
 
-            // 1.16.5: ServerPlayNetHandler.connection is the NetworkManager
+            // 1.21.1: ServerPlayNetHandler.connection is the NetworkManager
             CHANNEL.sendTo(new ModPong(true, licensed, reason, message),
                     player.connection.connection,
                     NetworkDirection.PLAY_TO_CLIENT);

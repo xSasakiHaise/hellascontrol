@@ -81,7 +81,7 @@ verification.【F:src/main/java/com/xsasakihaise/hellascontrol/license/LicenseSe
 ## Server Start-Up Hooks
 
 `HellasControl.onServerStart` orchestrates the licence lifecycle during a
-Forge dedicated-server boot.【F:src/main/java/com/xsasakihaise/hellascontrol/HellasControl.java†L55-L85】 The sequence is:
+NeoForge dedicated-server boot.【F:src/main/java/com/xsasakihaise/hellascontrol/HellasControl.java†L55-L85】 The sequence is:
 
 1. Resolve the server root and load the licence cache (as described above).
 2. Call `LicenseEnforcer.enforceServerLicense`, which runs the remote check and

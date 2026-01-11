@@ -2,8 +2,8 @@ package com.xsasakihaise.hellascontrol.client;
 
 import com.xsasakihaise.hellascontrol.ClientModState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.network.play.ClientPlayNetHandler; // MCP/SRG
-import net.minecraft.util.text.StringTextComponent;            // MCP/SRG
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.chat.Component;
 
 /**
  * Disconnects the player if the connected server is not running a valid
@@ -31,11 +31,11 @@ public final class ClientEnforcer {
             }
             String finalMsg = msg;
 
-            ClientPlayNetHandler handler = mc.getConnection();
+            ClientPacketListener handler = mc.getConnection();
             if (handler != null) {
                 // This shows the “Disconnected” screen with your message and closes the connection.
                 LOGGER.info("[HellasControl] ClientEnforcer.disconnect (unlicensed) message='{}'", finalMsg);
-                mc.execute(() -> handler.onDisconnect(new StringTextComponent(finalMsg)));
+                mc.execute(() -> handler.onDisconnect(Component.literal(finalMsg)));
             }
         }
     }
@@ -49,10 +49,10 @@ public final class ClientEnforcer {
         String msg = (message == null || message.isEmpty())
                 ? "Server requires HellasControl."
                 : message;
-        ClientPlayNetHandler handler = mc.getConnection();
+        ClientPacketListener handler = mc.getConnection();
         if (handler != null) {
             LOGGER.info("[HellasControl] ClientEnforcer.disconnect (missing server) message='{}'", msg);
-            mc.execute(() -> handler.onDisconnect(new StringTextComponent(msg)));
+            mc.execute(() -> handler.onDisconnect(Component.literal(msg)));
         }
     }
 }

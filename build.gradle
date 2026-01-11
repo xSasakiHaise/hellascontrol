@@ -2,7 +2,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'net.neoforged.gradle.userdev' version '[7.0,7.1)'
     id 'java'
 }
 
@@ -12,12 +12,12 @@ archivesBaseName = "hellascontrol"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8) // Forge 1.16.5 requires Java 8
+        languageVersion = JavaLanguageVersion.of(21) // NeoForge 1.21.1 requires Java 21
     }
 }
 
 minecraft {
-    mappings channel: 'official', version: '1.16.5'
+    mappings channel: 'official', version: '1.21.1'
 }
 
 repositories {
@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.16.5-36.2.42'
+    minecraft 'net.neoforged:neoforge:21.1.65'
 }
 
 jar {

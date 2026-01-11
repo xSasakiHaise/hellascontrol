@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[36,)"
+loaderVersion="[2,)"
 logoFile="HellasControl.png"
 license="Restricted"
 
@@ -15,16 +15,16 @@ Welcome to Hellas :)
 '''
 
 [[dependencies.hellascontrol]]
-modId="forge"
+modId="neoforge"
 mandatory=true
-versionRange="[36,)"
+versionRange="[21.1.65,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.hellascontrol]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.16.5,)"
+versionRange="[1.21.1,)"
 ordering="NONE"
 side="BOTH"
 
