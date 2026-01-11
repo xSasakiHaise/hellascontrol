@@ -8,9 +8,9 @@ package com.example.mymod;
 
 import com.xsasakihaise.hellascontrol.api.CoreCheck;
 import com.xsasakihaise.hellascontrol.api.sidemods.HellasAPIControlScanner;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(MyMod.MODID)
 public class MyMod {
@@ -19,6 +19,14 @@ public class MyMod {
     public MyMod() {
         // Hard fail if HellasControl is missing so the game enters an error state.
         CoreCheck.verifyCoreLoaded();
+
+        // Ensure HellasControl metadata contains the required description substring.
+        if (!net.neoforged.fml.ModList.get().getModContainerById("hellascontrol")
+                .map(container -> container.getModInfo().getDescription())
+                .filter(desc -> desc != null && desc.contains("crafted by the Hephaestus Forge"))
+                .isPresent()) {
+            throw new IllegalStateException("HellasControl description missing required substring.");
+        }
 
         // Entitlement check (server-only for entitlement).
         CoreCheck.verifyEntitled("scanner");

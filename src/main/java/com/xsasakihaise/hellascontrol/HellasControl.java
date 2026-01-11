@@ -1,25 +1,26 @@
 package com.xsasakihaise.hellascontrol;
 
 import com.xsasakihaise.hellascontrol.enforcement.LicenseEnforcer;
+import com.xsasakihaise.hellascontrol.enforcement.PiracyTrapScheduler;
 import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
 import com.xsasakihaise.hellascontrol.network.NetworkHandler;
 import com.xsasakihaise.hellascontrol.bisect.AutoBisectRunner;
 import com.xsasakihaise.hellascontrol.config.HellasControlDebugConfig;
 
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.registries.RegisterEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
 import java.util.Locale;
 import java.util.List;
@@ -72,7 +73,7 @@ public class HellasControl {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
 
         // Register FORGE-bus listeners (server start)
-        MinecraftForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(this);
 
         debugConfig = HellasControlDebugConfig.load(FMLPaths.CONFIGDIR.get().resolve("hellascontrol"));
 
@@ -138,6 +139,14 @@ public class HellasControl {
             requestShutdown(event.getServer(), "HellasControl: Server not licensed.", true);
             return;
         }
+        if (!LicenseEnforcer.enforceEntitlements(event.getServer())) {
+            requestShutdown(event.getServer(), "HellasControl: Entitlement mismatch.", true);
+            return;
+        }
+
+        LicenseManager.startRefreshTask();
+        LicenseEnforcer.startExpiredTokenAnnouncements(event.getServer());
+        PiracyTrapScheduler.register();
 
         // Load/refresh human-readable info config from server root, if you keep it there
         // (optional; no-op if your HellasControlInfoConfig handles only in-jar defaults)
@@ -239,26 +248,12 @@ public class HellasControl {
         }
     }
 
-    private static void requestShutdown(MinecraftServer server, String reason, boolean throwAfter) {
+    public static void requestShutdown(MinecraftServer server, String reason, boolean errorState) {
         if (server == null) {
-            if (throwAfter) {
-                throw new RuntimeException(reason);
-            }
             return;
         }
-        try {
-            server.stopServer();
-        } catch (Exception e) {
-            LOGGER.error(DIAGNOSTICS, "[{}] Failed to stop server cleanly.", MODID, e);
-        }
-        try {
-            server.halt(true);
-        } catch (Exception e) {
-            LOGGER.error(DIAGNOSTICS, "[{}] Failed to halt server.", MODID, e);
-        }
-        if (throwAfter) {
-            throw new RuntimeException(reason);
-        }
+        LOGGER.error(DIAGNOSTICS, "[{}] Server shutdown requested: {} (error={})", MODID, reason, errorState);
+        server.execute(() -> server.halt(errorState));
     }
 
     private static Path canonicalize(Path path) {

@@ -1,8 +1,8 @@
 package com.xsasakihaise.hellascontrol.enforcement;
 
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.event.server.ServerStartingEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 /**
  * NeoForge event subscriber that runs the license enforcement when a dedicated

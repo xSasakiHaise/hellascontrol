@@ -26,6 +26,13 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
      ordering="NONE"
      side="BOTH"
      ```
+   - Ensure the description includes the exact substring `crafted by the Hephaestus Forge` (case-sensitive), for example:
+     ```toml
+     description='''
+     Your mod description here.
+     crafted by the Hephaestus Forge
+     '''
+     ```
 2. **Add HellasControl to the Gradle classpath.**
    - In your mod project `build.gradle`, add the HellasControl JAR (local file or Maven coordinate) to `dependencies { compileOnly ... }` so the API classes above compile.
    - To pull the library straight from the public GitHub repo via JitPack, add the repository and dependency:
@@ -63,7 +70,7 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
 5. **Optionally short-circuit when HellasControl is absent on clients.**
    - Add the NeoForge helper import if you do not have it already:
      ```java
-     import net.minecraftforge.fml.ModList;
+     import net.neoforged.fml.ModList;
      ```
    - Guard your registration code so licensed content never loads without HellasControl:
      ```java
