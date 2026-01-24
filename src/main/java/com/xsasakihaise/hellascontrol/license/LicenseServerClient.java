@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * Talks to your WordPress-based license API.
- * Endpoint: https://web.hephaestus-forge.cc/wp-json/hellas/v1/license/verify
+     * Endpoint: https://web.hephaestus-forge.cc/wp-json/hellas/v2/license/verify
  *
  * NOTE:
  * - Server-only: call from LicenseManager.verifyServer()
@@ -27,7 +27,7 @@ public final class LicenseServerClient {
 
     // If you later want to make this configurable, read it from license.json and fall back to this default.
     private static final String VERIFY_URL =
-            "https://web.hephaestus-forge.cc/wp-json/hellas/v1/license/verify";
+            "https://web.hephaestus-forge.cc/wp-json/hellas/v2/license/verify";
 
     private static final Gson GSON = new Gson();
 
