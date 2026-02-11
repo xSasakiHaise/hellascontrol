@@ -61,7 +61,7 @@ public final class ClientEnforcer {
         ClientPacketListener handler = mc.getConnection();
         if (handler != null) {
             LOGGER.info("[HellasControl] ClientEnforcer.disconnect (missing server) message='{}'", msg);
-            mc.execute(() -> handler.onDisconnect(Component.literal(msg)));
+            mc.execute(() -> handler.getConnection().disconnect(Component.literal(msg)));
         }
     }
 
@@ -76,7 +76,7 @@ public final class ClientEnforcer {
                 : message;
         ClientPacketListener handler = mc.getConnection();
         if (handler != null) {
-            mc.execute(() -> handler.onDisconnect(Component.literal(msg)));
+            mc.execute(() -> handler.getConnection().disconnect(Component.literal(msg)));
         }
     }
 
