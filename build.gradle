@@ -2,31 +2,33 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '[7.0,7.1)'
+    id 'net.neoforged.gradle.userdev' version '7.1.20'
     id 'java'
 }
 
 group = "com.github.xSasakiHaise"
 version = "2.0.1"
-archivesBaseName = "hellascontrol"
+
+base {
+    archivesName = "hellascontrol"
+}
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21) // NeoForge 1.21.1 requires Java 21
+        languageVersion = JavaLanguageVersion.of(21)
     }
-}
-
-minecraft {
-    mappings channel: 'official', version: '1.21.1'
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
+    // optional, aber kann helfen falls irgendwas repo-mäßig hakt:
+    maven { url = 'https://maven.neoforged.net/releases' }
 }
 
 dependencies {
-    minecraft 'net.neoforged:neoforge:21.1.65'
+    // NeoForge 1.21.1
+    implementation "net.neoforged:neoforge:21.1.65"
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -45,14 +47,14 @@ publishing {
     }
 }
 
-jar {
+tasks.named('jar', Jar).configure {
     manifest {
         attributes(
                 "Specification-Title": "HellasControl",
                 "Specification-Vendor": "xSasaki_Haise",
                 "Specification-Version": "1",
                 "Implementation-Title": "HellasControl",
-                "Implementation-Version":"2.0.1",
+                "Implementation-Version": project.version,
                 "Implementation-Vendor": "xSasaki_Haise"
         )
     }

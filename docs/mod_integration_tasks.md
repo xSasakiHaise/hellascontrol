@@ -51,7 +51,7 @@ If you integrate a different sidemod, swap in its helper or call the two `CoreCh
      ```java
      import com.xsasakihaise.hellascontrol.api.CoreCheck;
      // or
-     import com.xsasakihaise.hellascontrol.api.sidemods.HellasAPIHellasBattlebuddy;
+     import com.xsasakihaise.hellascontrol.api.sidemods.HellasAPIControlBattlebuddy;
      ```
 4. **Run the boot-time checks before any content registration.**
    - Inside your constructor or `FMLCommonSetupEvent` handler, insert the guard calls:

@@ -3,9 +3,9 @@ package com.xsasakihaise.hellascontrol.api.sidemods;
 import com.xsasakihaise.hellascontrol.api.CoreCheck;
 
 /** Verifier for the Hellas Battlebuddy assistant mod. */
-public final class HellasAPIHellasBattlebuddy {
+public final class HellasAPIControlBattlebuddy {
 
-    private HellasAPIHellasBattlebuddy() {}
+    private HellasAPIControlBattlebuddy() {}
 
     /** Validates that the "battlebuddy" entitlement is granted. */
     public static void verify() {

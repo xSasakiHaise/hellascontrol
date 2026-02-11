@@ -3,9 +3,9 @@ package com.xsasakihaise.hellascontrol.api.sidemods;
 import com.xsasakihaise.hellascontrol.api.CoreCheck;
 
 /** Ensures Hellas Wilds content loads only on licensed servers. */
-public final class HellasAPIHellasWilds {
+public final class HellasAPIControlWilds {
 
-    private HellasAPIHellasWilds() {}
+    private HellasAPIControlWilds() {}
 
     /** Requires the "wilds" entitlement. */
     public static void verify() {
