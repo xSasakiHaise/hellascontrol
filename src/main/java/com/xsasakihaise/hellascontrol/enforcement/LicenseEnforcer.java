@@ -3,7 +3,7 @@ package com.xsasakihaise.hellascontrol.enforcement;
 import com.xsasakihaise.hellascontrol.license.LicenseCache;
 import com.xsasakihaise.hellascontrol.license.LicenseManager;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.chat.Component;
 
@@ -46,7 +46,7 @@ public final class LicenseEnforcer {
             }
         }
         java.util.List<String> unauthorized = new java.util.ArrayList<>();
-        for (ModInfo mod : ModList.get().getMods()) {
+        for (IModInfo mod : ModList.get().getMods()) {
             String modId = mod.getModId();
             if (modId.startsWith("hellas") && !modId.equals("hellascontrol")) {
                 String key = modId.replace("hellas", "");

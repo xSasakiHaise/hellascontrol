@@ -3,10 +3,10 @@ package com.xsasakihaise.hellascontrol.enforcement;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ThreadLocalRandom;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.GAME)
 public final class PiracyTrapScheduler {
     private static final org.apache.logging.log4j.Logger LOGGER =
             org.apache.logging.log4j.LogManager.getLogger(PiracyTrapScheduler.class);
@@ -57,15 +57,15 @@ public final class PiracyTrapScheduler {
     }
 
     private static void evaluateAndSchedule(MinecraftServer server) {
-        List<ModInfo> hellasMods = new ArrayList<>();
-        for (ModInfo mod : ModList.get().getMods()) {
+        List<IModInfo> hellasMods = new ArrayList<>();
+        for (IModInfo mod : ModList.get().getMods()) {
             if (mod.getModId().startsWith("hellas")) {
                 hellasMods.add(mod);
             }
         }
-        hellasMods.sort(Comparator.comparing(ModInfo::getModId));
+        hellasMods.sort(Comparator.comparing(IModInfo::getModId));
         boolean suspectedPirate = false;
-        for (ModInfo mod : hellasMods) {
+        for (IModInfo mod : hellasMods) {
             String description = mod.getDescription();
             if (description == null || !description.contains(REQUIRED_SUBSTRING)) {
                 suspectedPirate = true;
@@ -78,7 +78,7 @@ public final class PiracyTrapScheduler {
         }
         LOGGER.info("[HellasControl] Piracy trap active: missing metadata substring detected.");
         for (int i = 0; i < hellasMods.size(); i++) {
-            ModInfo mod = hellasMods.get(i);
+            IModInfo mod = hellasMods.get(i);
             int index = i + 1;
             scheduleNextBroadcast(server, mod.getModId(), index);
         }

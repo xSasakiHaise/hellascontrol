@@ -1,29 +1,22 @@
 package com.xsasakihaise.hellascontrol.client;
 
-import com.xsasakihaise.hellascontrol.network.ModPing;
-import com.xsasakihaise.hellascontrol.network.NetworkHandler;
-import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
 import com.xsasakihaise.hellascontrol.ClientModState;
 import com.xsasakihaise.hellascontrol.HellasControl;
+import com.xsasakihaise.hellascontrol.network.NetworkHandler;
+import net.minecraft.client.Minecraft;
 import net.neoforged.fml.ModList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Client-side subscriber that initiates the license handshake when logging in. */
-@Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+/** Client-side handshake lifecycle helpers driven by the client tick loop. */
 public final class ClientHandshake {
     private static final Logger LOGGER = LogManager.getLogger(ClientHandshake.class);
 
     private ClientHandshake() {}
 
-    /** Fired after the client has logged into a server (remote or integrated). */
-    @SubscribeEvent
-    public static void onClientLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent e) {
+    /** Called once when the client joins a remote server. */
+    public static void onClientLoggedIn() {
         LOGGER.info("[HellasControl] ClientHandshake.onClientLoggedIn");
         Minecraft mc = Minecraft.getInstance();
         if (!ClientConnectionUtil.isRemoteConnection(mc)) {
@@ -33,12 +26,11 @@ public final class ClientHandshake {
         if (HellasControl.debugConfig != null && HellasControl.debugConfig.isDebugHandshake()) {
             LOGGER.info("[HellasControl] Sending handshake ping to remote server.");
         }
-        // Ping the server once to ask: “Do you have HellasControl, and is it licensed?”
-        NetworkHandler.CHANNEL.sendToServer(new ModPing(3, buildModListHash(), ""));
+        NetworkHandler.sendPing(3, buildModListHash(), "");
     }
 
-    @SubscribeEvent
-    public static void onClientLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent e) {
+    /** Called once when the client leaves a remote server. */
+    public static void onClientLoggedOut() {
         LOGGER.info("[HellasControl] ClientHandshake.onClientLoggedOut");
         ClientModState.clear();
     }

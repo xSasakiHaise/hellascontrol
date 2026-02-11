@@ -14,10 +14,11 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.registries.RegisterEvent;
@@ -63,14 +64,14 @@ public class HellasControl {
      * the mod event bus and the global Forge bus. All heavy work is deferred to
      * explicit callbacks so that Forge can control the threading model.
      */
-    public HellasControl() {
+    public HellasControl(IEventBus modEventBus) {
         LOGGER.info(DIAGNOSTICS, "[{}] Constructing mod instance", MODID);
         // Load default display/info config bundled in the jar
         infoConfig = new HellasControlInfoConfig();
         infoConfig.loadDefaultsFromResource();
 
         // Register MOD-bus listeners (lifecycle)
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
+        modEventBus.addListener(this::onCommonSetup);
 
         // Register FORGE-bus listeners (server start)
         NeoForge.EVENT_BUS.register(this);
@@ -113,7 +114,7 @@ public class HellasControl {
             return;
         }
         // Resolve the dedicated server's root directory -> .../config/hellascontrol/license.txt
-        Path serverRoot = canonicalize(event.getServer().getServerDirectory().toPath());
+        Path serverRoot = canonicalize(event.getServer().getServerDirectory());
         Path configDir = canonicalize(FMLPaths.CONFIGDIR.get());
         LOGGER.info(DIAGNOSTICS, "[{}] Dedicated server root: {}", MODID, serverRoot);
         LOGGER.info(DIAGNOSTICS, "[{}] Dedicated server config dir: {}", MODID, configDir);
@@ -165,7 +166,7 @@ public class HellasControl {
     }
 
     private static void logModList() {
-        List<ModInfo> mods = ModList.get().getMods();
+        List<IModInfo> mods = ModList.get().getMods();
         String summary = mods.stream()
                 .map(mod -> mod.getModId() + ":" + mod.getVersion().toString())
                 .collect(Collectors.joining(", "));
@@ -179,7 +180,7 @@ public class HellasControl {
         }
     }
 
-    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = MODID, bus = EventBusSubscriber.Bus.MOD)
     public static class RegistryDiagnostics {
         @SubscribeEvent
         public static void onRegistryRegister(RegisterEvent event) {
